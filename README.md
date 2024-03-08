@@ -11,7 +11,7 @@
 
 ## Installation
 
-### You **Must** have python 3.10 installed, and it **Must** be the running version of python
+### You **must** have python 3.10 or 3.11 installed, and it **must** be the running version of python
 
 ### Windows
 
@@ -30,7 +30,14 @@ If you are on linux all you need to do to install the scripts is open up a shell
 ```
 git clone https://github.com/Jelosus2/LoRA_Easy_Training_Colab_Frontend
 cd LoRA_Easy_Training_Colab_Frontend
-python3.10 install.py
+
+# Python 3.10
+sudo chmod 755 ./install310.sh (Or other permissions)
+./install310.sh
+
+# Python 3.11
+sudo chmod 755 ./install311.sh (Or other permissions)
+./install311.sh
 ```
 
 ## Usage
