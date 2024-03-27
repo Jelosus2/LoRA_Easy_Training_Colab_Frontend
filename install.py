@@ -42,12 +42,14 @@ def main():
         "venv/Scripts/pip.exe" if sys.platform == "win32" else "venv/bin/pip"
     )
     subprocess.check_call(
-        f"{venv_path} install -r requirements.txt", shell=sys.platform == "linux"
+        f"{venv_path} install -U -r requirements.txt", shell=sys.platform == "linux"
     )
 
     config = Path("config.json")
     config_dict = json.loads(config.read_text()) if config.exists() else {}
+
     config_dict["run_local"] = False
+    config_dict["colab"] = True
     config.write_text(json.dumps(config_dict, indent=2))
 
 if __name__ == "__main__":

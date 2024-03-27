@@ -132,6 +132,7 @@ class NetworkWidget(BaseWidget):
         self.widget.train_norm_enable.clicked.connect(
             lambda x: self.edit_network_args("train_norm", x, True)
         )
+        self.widget.dora_enable.clicked.connect(self.enable_disable_dora)
         self.widget.ip_gamma_enable.clicked.connect(self.enable_disable_ip_gamma)
         self.widget.ip_gamma_input.valueChanged.connect(
             lambda x: self.edit_args("ip_noise_gamma", x, True)
@@ -166,11 +167,18 @@ class NetworkWidget(BaseWidget):
         algo = algo.lower()
         self.toggle_conv(algo != "lora")
         self.toggle_kohya(algo in {"lora", "locon", "dylora"})
-        self.toggle_lycoris(algo not in {"lora", "locon", "dylora"})
+        self.toggle_lycoris(
+            algo not in {"lora", "locon", "dylora"},
+            algo in {"locon (lycoris)", "loha", "lokr"},
+        )
         self.lycoris = algo not in {"lora", "locon", "dylora"}
         self.toggle_dylora(algo == "dylora")
         self.toggle_block_weight(algo in {"lora", "locon", "dylora"}, algo == "lora")
-        self.toggle_dropout(algo != "ia3")
+        self.toggle_dropout(
+            algo != "ia3",
+            algo in {"locon (lycoris)", "loha", "lokr"}
+            and self.widget.dora_enable.isChecked(),
+        )
 
     def change_min_timestep(self, value: int) -> None:
         if value >= self.widget.max_timestep_input.value():
@@ -205,9 +213,10 @@ class NetworkWidget(BaseWidget):
             "conv_alpha", self.widget.conv_alpha_input.value() if toggle else None, True
         )
 
-    def toggle_lycoris(self, toggle: bool) -> None:
+    def toggle_lycoris(self, toggle: bool, toggle_dora: bool) -> None:
         self.widget.cp_enable.setEnabled(toggle)
         self.widget.train_norm_enable.setEnabled(toggle)
+        self.widget.dora_enable.setEnabled(toggle and toggle_dora)
         self.widget.lycoris_preset_input.setEnabled(toggle)
         self.widget.rescale_enable.setEnabled(toggle)
         self.widget.constrain_enable.setEnabled(toggle)
@@ -218,6 +227,11 @@ class NetworkWidget(BaseWidget):
         self.edit_network_args(
             "train_norm",
             self.widget.train_norm_enable.isChecked() if toggle else False,
+            True,
+        )
+        self.edit_network_args(
+            "dora_wd",
+            self.widget.dora_enable.isChecked() if toggle and toggle_dora else False,
             True,
         )
         self.edit_network_args(
@@ -269,13 +283,15 @@ class NetworkWidget(BaseWidget):
                 elem[0].extra_elem.setChecked(False)
                 elem[0].enable_disable(False)
 
-    def toggle_dropout(self, toggle: bool) -> None:
-        self.widget.network_dropout_enable.setEnabled(toggle)
+    def toggle_dropout(self, toggle: bool, toggle_dora: bool) -> None:
+        self.widget.network_dropout_enable.setEnabled(toggle and not toggle_dora)
         self.widget.rank_dropout_enable.setEnabled(toggle)
         self.widget.module_dropout_enable.setEnabled(toggle)
 
         self.enable_disable_network_dropout(
-            self.widget.network_dropout_enable.isChecked() if toggle else False
+            self.widget.network_dropout_enable.isChecked()
+            if toggle and not toggle_dora
+            else False
         )
         self.enable_disable_rank_dropout(
             self.widget.rank_dropout_enable.isChecked() if toggle else False
@@ -344,6 +360,13 @@ class NetworkWidget(BaseWidget):
         self.edit_network_args(
             "module_dropout", self.widget.module_dropout_input.value(), True
         )
+
+    def enable_disable_dora(self, checked: bool) -> None:
+        self.widget.network_dropout_enable.setEnabled(not checked)
+        self.enable_disable_network_dropout(
+            False if checked else self.widget.network_dropout_enable.isChecked()
+        )
+        self.edit_network_args("dora_wd", checked, True)
 
     def enable_disable_ip_gamma(self, checked: bool) -> None:
         if "ip_noise_gamma" in self.args:
@@ -448,6 +471,7 @@ class NetworkWidget(BaseWidget):
         )
         self.widget.cp_enable.setChecked(network_args.get("use_tucker", False))
         self.widget.train_norm_enable.setChecked(network_args.get("train_norm", False))
+        self.widget.dora_enable.setChecked(network_args.get("dora_wd", False))
         self.widget.ip_gamma_enable.setChecked(bool(args.get("ip_noise_gamma", False)))
         self.widget.ip_gamma_input.setValue(args.get("ip_noise_gamma", 0.1))
         self.widget.rescale_enable.setChecked(network_args.get("rescaled", False))
