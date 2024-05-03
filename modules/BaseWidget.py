@@ -5,10 +5,11 @@ from pathlib import Path
 
 
 class BaseWidget(QtWidgets.QWidget):
-    def __init__(self, parent: QtWidgets.QWidget = None) -> None:
+    def __init__(self, network_manager, parent: QtWidgets.QWidget = None) -> None:
         super().__init__(parent)
         self.colap = CollapsibleWidget(self)
         self.content = QtWidgets.QWidget()
+        self.network_manager = network_manager
         self.widget = None
 
         self.name = ""
